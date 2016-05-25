@@ -1,0 +1,428 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.2.18.min.js"></script>
+    <script id="facebook-jssdk" src="https://connect.facebook.net/en_US/all.js"></script>
+    <meta charset="UTF-8">
+    <title>AWS CRUD Test</title>
+</head>
+<body>
+    <div id="fb-root"></div>
+		<button id="login">Login</button>
+    <h3>AwsCrud Test I/O</h3>
+    Key Value: <input id="keyValue" type="text" /><br />
+    Attribute: <input id="attributeText" type="text" /><br />
+    Value: <input id="valueText" type="text" /><br />
+    <button id="putThis">Put!</button> | <button id="getThis">Get!</button> | <button id="updateThis">Update!</button> | <button id="deleteThis">Delete!</button>
+    <button id = "Query">Query</button>
+    
+    <button id ="testbutton">Click to increase counter</button>
+
+    <button id ="saveCookie">Save Cookie Button</button>
+    <p id = "putResults"></p>
+
+    <p id ="QueryResults"></p>
+    <p id ="fbLoginResults"></p>
+
+
+    <script type="text/javascript">
+        var sessionid = new Date();
+        sessionid = sessionid.toString();
+ 
+        var testBtnClicks = 0; 
+        var putBtnClicks = 0;
+        var getBtnClicks = 0;
+        var updateBtnClicks = 0;
+        var deleteBtnClicks = 0;
+        var queryBtnClicks = 0;
+        var saveBtnClicks = 0;
+        var fbUserId;
+        var params;
+        var params1;
+        var keyText;
+        var attText;
+        var valText;
+        var dynamodb = null;
+        var docClient = null;
+        var appId = 'appid goes here';
+                     //from facebook
+        var roleArn = 'rolearn goes here'; //from AWS IAM
+        var resultData = null;
+document.getElementById('Query').onclick = function ()
+        {
+    queryBtnClicks +=1;
+    document.cookie= "queryBtn=" + queryBtnClicks;
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    var params = {
+    TableName : "websiteTest",
+    KeyConditionExpression: "#a = :v",
+    ExpressionAttributeNames:{
+        "#a": "itemID"
+    },
+    ExpressionAttributeValues: {
+        ":v":"12345"
+    }
+      
+};
+
+docClient.query(params, function(err, data) {
+    if (err) {
+        console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+    } else {
+        console.log("Query succeeded.");
+        data.Items.forEach(function(item) {
+            console.log(" -", item.loginBtn + ": " + item.LastVisited);
+            document.getElementById("QueryResults").innerHTML = "Login Button Clicks: " + item.loginBtn + " Last Visited: " + item.LastVisited;
+        });
+    }
+    
+});
+}
+        
+        
+        
+document.getElementById('putThis').onclick = function () {
+     putBtnClicks +=1;
+    document.cookie= "putBtn=" + putBtnClicks;
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    keyText = document.getElementById("keyValue").value;
+    attText = document.getElementById("attributeText").value;
+    valText = document.getElementById("valueText").value;
+    console.log("Key Value: ", keyText);
+    console.log("Attribute: ", attText);
+    console.log("Value: ", valText);
+    params = {
+        TableName: 'websiteTest',
+        Item: {
+            itemID: keyText,
+            attText: valText
+        }
+    };
+    
+    docClient.put(params, function(err, data){
+        if (err) console.log(err);
+        else
+        {
+            resultData = data;
+            console.log(resultData);
+
+        }
+    })
+   
+
+};
+
+document.getElementById('getThis').onclick = function () {
+     getBtnClicks +=1;
+    document.cookie= "getBtn=" + getBtnClicks;
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    keyText = document.getElementById("keyValue").value;
+    attText = document.getElementById("attributeText").value;
+    console.log("Key Value: ", keyText);
+    console.log("Attribute: ", attText);
+    params = {
+        TableName: 'websiteTest',
+        Key: {
+            itemID: keyText
+        },
+        ProjectionExpression: "#a",
+        ExpressionAttributeNames: {
+            '#a': attText
+        }
+    };
+    
+    docClient.get(params, function (err, data) {
+         if (err) {
+        console.log(err, err.stack);
+         document.getElementById("putResults").innerHTML= "Error: "+JSON.stringify(err);
+         }
+        else { 
+            console.log(JSON.stringify(data));
+ 
+             document.getElementById("putResults").innerHTML="attText value is =" +data.Item.attText;
+            
+                    
+    }})
+};
+
+document.getElementById('updateThis').onclick = function () {
+    updateBtnClicks +=1;
+    document.cookie= "updateBtn=" + updateBtnClicks;
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    keyText = document.getElementById("keyValue").value;
+    attText = document.getElementById("attributeText").value;
+    valText = document.getElementById("valueText").value;
+    console.log("Key Value: ", keyText);
+    console.log("Attribute: ", attText);
+    console.log("Value: ", valText);
+    params = {
+        TableName: 'websiteTest',
+        Key: {
+            itemID: keyText
+        },
+        ExpressionAttributeNames: {
+            '#a': attText
+        },
+        ExpressionAttributeValues: {
+            ':v': valText
+        },
+        UpdateExpression: 'set #a = :v',
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(data);
+    })
+};
+
+document.getElementById('deleteThis').onclick = function () {
+     deleteBtnClicks +=1;
+    document.cookie= "delBtn=" + deleteBtnClicks;
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    keyText = document.getElementById("keyValue").value;
+    console.log("Key Value: ", keyText);
+    params = {
+        TableName: 'websiteTest',
+        Key: {
+            itemID: keyText
+        }
+    };
+    docClient.delete(params, function(err, data){
+    if(err) console.log(err);
+    else console.log(data);
+    });
+};
+
+document.getElementById('testbutton').onclick = function () {
+    testBtnClicks +=1;
+    document.cookie= "testBtn=" + testBtnClicks;
+    
+    
+}
+document.getElementById("saveCookie").onclick = function () {
+  saveBtnClicks +=1;
+    document.cookie= "saveBtn=" + saveBtnClicks;
+    
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    var putBtnCookie = getCookie("putBtn");
+ var testBtnCookie = getCookie("testBtn");
+ var getBtnCookie = getCookie("getBtn");
+ var updateBtnCookie = getCookie("updateBtn");
+ var delBtnCookie = getCookie("delBtn");
+ var queryBtnCookie = getCookie("queryBtn");
+ var saveBtnCookie = getCookie("saveBtn");
+ var emailCookie = getCookie("email");
+    
+ params = {
+        TableName: 'websiteTest',
+        Key: {
+            itemID: sessionid
+        },
+        
+        ExpressionAttributeValues: {
+            ':v': putBtnCookie, 
+            ':v1':testBtnCookie,
+            ':v2':getBtnCookie,
+            ':v3':updateBtnCookie,
+            ':v4':delBtnCookie,
+            ':v5':queryBtnCookie,
+            ':v6':saveBtnCookie,
+            ':v7':emailCookie,
+        },
+        UpdateExpression: 'SET email= :v7,' + 'putBtn= :v,'+'testBtn = :v1,' +'getBtn = :v2,'+ 'updateBtn= :v3,'+'delBtn= :v4,'+ 'queryBtn= :v5,' + 'saveBtn= :v6',
+    };
+   
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(data);
+    })
+
+};
+        
+window.fbAsyncInit = function () {
+    FB.init({ appId: appId });
+
+    document.getElementById('login').onclick = function () {
+
+        FB.login(function (response) {
+            if (response.authResponse) {
+                AWS.config.credentials = new AWS.WebIdentityCredentials({ //WIF
+                    RoleArn: roleArn,
+                    ProviderId: 'graph.facebook.com',
+                    WebIdentityToken: response.authResponse.accessToken
+                });
+                
+          var url = '/me?fields=name,email';
+         
+           FB.api(url, function(response) {
+                console.log('Good to see you, ' + response.name + '. your email is '+response.email);
+                
+            document.getElementById("fbLoginResults").innerHTML="your name is: "+ response.name + ".   your email is "+response.email;
+                var facename=response.name;
+                var facemail=response.email;
+                document.cookie = "email=" + facemail;
+                document.cookie = "name=" + facename;
+                      
+
+     });
+            }
+            else {
+                console.log("Issue logging in");
+            }
+
+            // Load the FB JS SDK asynchronously
+            (function (d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) { return; }
+                js = d.createElement(s); js.id = id;
+                js.src = "https://connect.facebook.net/en_US/all.js";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+        
+    
+     dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+ docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+   params = {
+    TableName: 'websiteTest',
+    Key: { 
+    "itemID": "12345"
+},
+       ExpressionAttributeValues: {
+                    ':increment_by': 1,
+                    ':now': sessionid
+                    
+    },
+    UpdateExpression: 'SET loginBtn = loginBtn + :increment_by,' +'LastVisited = :now',
+     
+   };
+          
+       docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(data);
+        
+    })
+       
+}, { scope: 'email' }
+                 )
+        }
+    }
+
+window.onload = function () {
+     document.cookie = "putBtn=" + 0; //int cookies
+     document.cookie = "testBtn=" + 0;
+     document.cookie = "getBtn=" + 0;
+    document.cookie = "updateBtn=" + 0;
+    document.cookie = "delBtn="+ 0;
+    document.cookie = "queryBtn="+0;
+    document.cookie = "saveBtn=" +0;
+     document.cookie = "email=" + " ";
+     document.cookie = "name=" + " ";
+    
+       
+}; 
+window.onbeforeunload = function (e) {
+
+
+ var putBtnCookie = getCookie("putBtn");
+ var testBtnCookie = getCookie("testBtn");
+ var getBtnCookie = getCookie("getBtn");
+ var updateBtnCookie = getCookie("updateBtn");
+ var delBtnCookie = getCookie("delBtn");
+ var queryBtnCookie = getCookie("queryBtn");
+ var saveBtnCookie = getCookie("saveBtn");
+ var emailCookie = getCookie("email");
+    
+putBtnCookie= parseInt(putBtnCookie);
+testBtnCookie = parseInt(testBtnCookie);
+getBtnCookie = parseInt(getBtnCookie);
+updateBtnCookie = parseInt(updateBtnCookie);
+delBtnCookie = parseInt(delBtnCookie);
+queryBtnCookie = parseInt(queryBtnCookie);
+saveBtnCookie = parseInt(saveBtnCookie);
+    
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+ params = {
+        TableName: 'websiteTest',
+        Key: {
+            itemID: "12345"
+        },
+        
+        ExpressionAttributeValues: {
+            ':v': putBtnCookie, 
+            ':v1':testBtnCookie,
+            ':v2':getBtnCookie,
+            ':v3':updateBtnCookie,
+            ':v4':delBtnCookie,
+            ':v5':queryBtnCookie,
+            ':v6':saveBtnCookie,
+            ':increment_by': 1
+            
+
+             },
+        UpdateExpression: 'SET putBtn= putBtn + :v,'+'testBtn = testBtn + :v1,' +'getBtn = getBtn + :v2,'+ 
+     'updateBtn= updateBtn + :v3,'+'delBtn=delBtn + :v4,'+ 'queryBtn=queryBtn + :v5,' + 'saveBtn=saveBtn + :v6,' +'pageViews = pageViews + :increment_by', 
+      
+  
+            
+        };
+    params1 = {
+        TableName: 'websiteTest',
+        Key: {
+            itemID: sessionid
+        },
+        
+        ExpressionAttributeValues: {
+            ':v': putBtnCookie, 
+            ':v1':testBtnCookie,
+            ':v2':getBtnCookie,
+            ':v3':updateBtnCookie,
+            ':v4':delBtnCookie,
+            ':v5':queryBtnCookie,
+            ':v6':saveBtnCookie,
+            ':v7':emailCookie,
+        },
+        UpdateExpression: 'SET email= :v7,' + 'putBtn= :v,'+'testBtn = :v1,' +'getBtn = :v2,'+ 'updateBtn= :v3,'+'delBtn= :v4,'+ 'queryBtn= :v5,' + 'saveBtn= :v6',
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(data);
+    })
+    docClient.update(params1, function (err, data) {
+        if (err) console.log(err);
+        else console.log(data);
+         
+             })
+    var message = 'Are you sure you want to leave this page message',
+    e = e||window.event;
+                        if(e)
+                        e.returnValue=message; // IE
+                        return message; // Safari
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length,c.length);
+        }
+    }
+    return "";
+}
+</script>
+</body>
+</html>
