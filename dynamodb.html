@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.2.18.min.js"></script>
+    <script id="facebook-jssdk" src="https://connect.facebook.net/en_US/all.js"></script>
+    <meta charset="UTF-8">
+    <title>AWS CRUD Test</title>
+</head>
+<body>
+    <div id="fb-root"></div>
+		<button id="login">Login</button>
+    <h3>AwsCrud Test I/O</h3>
+    Full Name    : &nbsp&nbsp&nbsp <input id="nameinput" type="text" /><br />
+    Address:  &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<input id="addressinput" type="text" /><br />
+     City:  &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<input id="Cityinput" type="text" /><br />
+    State: &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<input id="Stateinput" type="text" /><br />
+    Zip Code: &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<input id="Zipcodeinput" type="text" /><br />
+    <button id="putThis">Put!</button>  <br/><br/>
+    <p id="results"> </p>
+    session #    : &nbsp&nbsp&nbsp <input id="snumber" type="text" /><br />
+    <button id="getThis">Get!</button>   <button id="deleteThis">Delete!</button><br/><br/>
+    <p id="results1"> </p>
+    <p id="results2"> </p>
+    <p id="results3"> </p>
+    
+    <h3>Update you Entries</h3>
+    update value: &nbsp<input id="updatevalue" type="text" /><br/>
+    <button id="updateName">Update Name</button> |  <button id="updateAddress">Update Address</button> |  <button id="updateCity">Update City</button> |  <button id="updateState">Update State</button> |  <button id="updateZipcode">Update Zip Code</button><br/><br/>
+    <h3>Create New Fields</h3>
+    field to create: &nbsp<input id="updatethisfield" type="text" />
+    field value : &nbsp&nbsp&nbsp&nbsp&nbsp<input id="updatedvalue" type="text" /><br /><br/>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+    <button id="updateThis">Create!</button><br/><br/><br/>
+   <h3>Find you Session Number(s)</h3>
+    enter your Email: &nbsp<input id="findpk" type="text" />
+    <button id="pk">find my primary key</button><br/>
+
+    <p id="results5"> </p>
+    <script type="text/javascript">
+        var fbUserId;
+        var params;
+        var name;
+        var k="";
+        var dynamodb = null;
+        var docClient = null;
+        var appId = '123456789'; //from facebook
+        var roleArn = 'xxxxxxxxx'; //from AWS IAM
+        var address;    
+        var resultData = null;
+        var d = Date();
+        var s="sid";
+        var  counter;
+
+document.getElementById('putThis').onclick =  function() {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    
+               name = document.getElementById("nameinput").value;
+    address=document.getElementById("addressinput").value; 
+    city= document.getElementById("Cityinput").value;
+    state =document.getElementById("Stateinput").value;
+     zipcode= document.getElementById("Zipcodeinput").value;  
+    var useremail=getCookie("email");
+    
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: s 
+        },
+    };
+            docClient.get(params, function (err, data) {
+        if (err){
+        //console.log(err, err.stack);
+         document.getElementById("results").innerHTML="you are either not logged in or your session# is wrong";
+   }
+        else {           newentry(data.Item.currentcount,name,address,city,state,zipcode,useremail);
+            
+    }})
+};
+    
+    
+    
+    
+    
+    
+    
+    
+    function newentry(p,name,address,city,state,zipcode,useremail) {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    
+//    console.log(p+name+address+city+"   "+useremail);
+    
+    params = {
+        TableName: 'webtest',
+        Item: {
+            cis311: p,
+            timeanddate:d,
+            Name: name,
+            Email:useremail,
+            Address : address,
+            City: city,
+            State:state,
+            ZipCode:zipcode,
+        
+        }
+    };
+    docClient.put(params, function(err, data){
+        if (err) console.log(err);
+        else
+        {
+            resultData = data;
+            console.log(resultData);
+
+        }
+    })
+
+
+};
+
+document.getElementById('getThis').onclick = function () {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    Sessionnumber = document.getElementById("snumber").value;
+    name = document.getElementById("nameinput").value;
+    address=document.getElementById("addressinput").value; 
+    city= document.getElementById("Cityinput").value;
+    state=document.getElementById("Stateinput").value;
+     zipcode= document.getElementById("Zipcodeinput").value;
+
+    
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber 
+        },
+        Item: {
+            Name:name,
+            Address : address,
+            State: state,
+            ZipCode:zipcode,
+            
+        },
+    };
+    docClient.get(params, function (err, data) {
+        if (err)
+        //console.log(err, err.stack);
+         document.getElementById("results").innerHTML="you are either not logged in or your session# is wrong";
+        
+        else {
+            if (data.Item.Address === undefined){
+                document.getElementById("results1").innerHTML=data.Item.Name; 
+                document.getElementById("results2").innerHTML=data.Item.Email;
+                document.getElementById("results3").innerHTML=data.Item.timeanddate;
+            }
+            else{
+            console.log(JSON.stringify(data));
+           document.getElementById("results1").innerHTML=data.Item.Name; 
+             document.getElementById("results2").innerHTML=data.Item.Address;
+             document.getElementById("results3").innerHTML=data.Item.City+", "+data.Item.State+" "+data.Item.ZipCode;
+            }
+    }})
+};
+
+document.getElementById('updateThis').onclick = function () {
+            
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    name = document.getElementById("nameinput").value;
+    address=document.getElementById("addressinput").value; 
+    city= document.getElementById("Cityinput").value;
+    state=document.getElementById("Stateinput").value;
+     zipcode= document.getElementById("Zipcodeinput").value;
+    fieldtoupdate = document.getElementById("updatethisfield").value;
+    newvalue = document.getElementById("updatedvalue").value;
+    Sessionnumber = document.getElementById("snumber").value;
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber
+        },
+        ExpressionAttributeNames: {
+       '#a': fieldtoupdate
+        },
+        ExpressionAttributeValues: {
+            ':v': newvalue
+        },
+        UpdateExpression: 'set #a = :v',
+    returnValues:"UPDATED NEW"
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(JSON.stringify(data));
+    })
+};
+        document.getElementById('updateName').onclick = function () {
+            
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    newvalue = document.getElementById("updatevalue").value;
+    Sessionnumber = document.getElementById("snumber").value;
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber
+        },
+        ExpressionAttributeNames: {
+       '#a': "Name"
+        },
+        ExpressionAttributeValues: {
+            ':v': newvalue
+        },
+        UpdateExpression: 'set #a = :v',
+    returnValues:"UPDATED NEW"
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(JSON.stringify(data));
+    })
+};
+        
+  document.getElementById('updateAddress').onclick = function () {
+            
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    newvalue = document.getElementById("updatevalue").value;
+    Sessionnumber = document.getElementById("snumber").value;
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber
+        },
+        ExpressionAttributeNames: {
+       '#a': "Address"
+        },
+        ExpressionAttributeValues: {
+            ':v': newvalue
+        },
+        UpdateExpression: 'set #a = :v',
+    returnValues:"UPDATED NEW"
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(JSON.stringify(data));
+    })
+};
+        document.getElementById('updateCity').onclick = function () {
+            
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    newvalue = document.getElementById("updatevalue").value;
+    Sessionnumber = document.getElementById("snumber").value;
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber
+        },
+        ExpressionAttributeNames: {
+       '#a': "City"
+        },
+        ExpressionAttributeValues: {
+            ':v': newvalue
+        },
+        UpdateExpression: 'set #a = :v',
+    returnValues:"UPDATED NEW"
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(JSON.stringify(data));
+    })
+};
+        
+        document.getElementById('updateState').onclick = function () {
+            
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    newvalue = document.getElementById("updatevalue").value;
+    Sessionnumber = document.getElementById("snumber").value;
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber
+        },
+        ExpressionAttributeNames: {
+       '#a': "State"
+        },
+        ExpressionAttributeValues: {
+            ':v': newvalue
+        },
+        UpdateExpression: 'set #a = :v',
+    returnValues:"UPDATED NEW"
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(JSON.stringify(data));
+    })
+};
+document.getElementById('updateZipcode').onclick = function () {
+            
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    newvalue = document.getElementById("updatevalue").value;
+    Sessionnumber = document.getElementById("snumber").value;
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber
+        },
+        ExpressionAttributeNames: {
+       '#a': "ZipCode"
+        },
+        ExpressionAttributeValues: {
+            ':v': newvalue
+        },
+        UpdateExpression: 'set #a = :v',
+    returnValues:"UPDATED NEW"
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log(JSON.stringify(data));
+    })
+};
+document.getElementById('deleteThis').onclick = function () {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    Sessionnumber = document.getElementById("snumber").value;
+   
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: Sessionnumber
+        }
+    };
+    docClient.delete(params, function(err, data){
+    if(err) console.log(err);
+    else console.log(data);
+    });
+};
+         function getcurrnetcount() {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+   
+    
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: s 
+        },
+    };
+            docClient.get(params, function (err, data) {
+        if (err){
+        //console.log(err, err.stack);
+         document.getElementById("results").innerHTML="you are either not logged in or your session# is wrong";
+   }
+        else { 
+            updatecurrentcount(data.Item.currentcount);
+            
+    }})
+};
+         function updatecurrentcount(count) {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    
+    fieldtoupdate = "currentcount";
+    var m=parseInt(count); 
+      m+=1;
+      //console.log(count);
+      newvalue =m+"" ;
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: s
+        },
+        ExpressionAttributeNames: {
+       '#a': fieldtoupdate
+        },
+        ExpressionAttributeValues: {
+            ':v': newvalue
+        },
+        UpdateExpression: 'set #a = :v',
+    returnValues:"UPDATED NEW"
+    };
+
+    docClient.update(params, function (err, data) {
+        if (err) console.log(err);
+        else console.log("");
+    })
+};
+
+window.fbAsyncInit = function () {
+    FB.init({ appId: appId  });
+    
+    document.getElementById('login').onclick = function () {
+
+        
+        FB.login(function (response) {
+            if (response.authResponse) {
+                
+                AWS.config.credentials = new AWS.WebIdentityCredentials({ //WIF
+                    RoleArn: roleArn,
+                    ProviderId: 'graph.facebook.com',
+                    WebIdentityToken: response.authResponse.accessToken,
+               
+                });
+                
+ 
+var url = '/me?fields=name,email';
+            FB.api(url, function(response) {
+                console.log('Good to see you, ' + response.name + '. your email is '+response.email);
+                getcurrnetcount();
+                var facname=response.name;
+                var facemail=response.email;
+                setCookie("name =",facname);
+                setCookie("email =", facemail);
+                //setCookie("email",facemail);
+               function setCookie(ctype, cname) {
+        
+    document.cookie = ctype+cname;
+                   newvisit();
+        } 
+
+     });
+            }
+            else {
+                console.log("Issue logging in");
+            }
+
+            (function (d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) { return; }
+                js = d.createElement(s); js.id = id;
+                js.src = "https://connect.facebook.net/en_US/all.js";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+            
+        }, { scope: 'email' }
+                )
+    }
+    
+}
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+        
+        
+        document.getElementById('pk').onclick = function(){
+
+   dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+
+var sd=document.getElementById("findpk").value;
+var params = {
+  TableName : 'webtest',
+   FilterExpression : "(contains(Email, :z)) ",
+  ExpressionAttributeValues : {":z": sd}
+};
+
+
+
+docClient.scan(params, function(err, data) {
+   if (err) console.log(err);
+    
+   else{
+       for(var i=0; i<data.Items.length;i++) {
+            k+= ""+data.Items[i].cis311+", "+"";
+}
+document.getElementById("results5").innerHTML="Primary Key/Keys: "+k;
+       }
+});
+        }
+        
+        
+        
+        function newvisit() {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+    
+             var name= getCookie("name");  
+    var useremail=getCookie("email");
+    
+    params = {
+        TableName: 'webtest',
+        Key: {
+            cis311: s 
+        },
+    };
+            docClient.get(params, function (err, data) {
+        if (err){
+         document.getElementById("results").innerHTML="you are either not logged in or your session# is wrong";
+   }
+        else {           visitentry(data.Item.currentcount,name,useremail);
+            
+    }})
+};
+    
+    
+    
+    
+    
+    
+    
+    
+    function visitentry(p,name,useremail) {
+    dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
+    docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+        
+    params = {
+        TableName: 'webtest',
+        Item: {
+            cis311: p,
+            timeanddate:d,
+            Name: name,
+            Email:useremail,
+                    
+        }
+    };
+    docClient.put(params, function(err, data){
+        if (err) console.log(err);
+        else
+        {
+            console.log(JSON.stringify(data));
+
+        }
+    })
+
+
+};
+
+
+    
+
+    
+    </script>
+</body>
+</html>
+
