@@ -42,8 +42,8 @@
         var k="";
         var dynamodb = null;
         var docClient = null;
-        var appId = '123456789'; //from facebook
-        var roleArn = 'xxxxxxxxx'; //from AWS IAM
+        var appId = '495112614025123'; //from facebook
+        var roleArn = 'arn:aws:iam::775663615825:role/CIS311-Role'; //from AWS IAM
         var address;    
         var resultData = null;
         var d = Date();
@@ -491,9 +491,7 @@ document.getElementById("results5").innerHTML="Primary Key/Keys: "+k;
     dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
     docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
     
-             var name= getCookie("name");  
-    var useremail=getCookie("email");
-    
+  
     params = {
         TableName: 'webtest',
         Key: {
@@ -504,7 +502,10 @@ document.getElementById("results5").innerHTML="Primary Key/Keys: "+k;
         if (err){
          document.getElementById("results").innerHTML="you are either not logged in or your session# is wrong";
    }
-        else {           visitentry(data.Item.currentcount,name,useremail);
+        else {
+             var cookiename= getCookie("name");  
+             var cuseremail=getCookie("email");       
+            visitentry(data.Item.currentcount,cookiename,cuseremail)
             
     }})
 };
@@ -519,22 +520,24 @@ document.getElementById("results5").innerHTML="Primary Key/Keys: "+k;
     function visitentry(p,name,useremail) {
     dynamodb = new AWS.DynamoDB({ region: 'us-west-2' });
     docClient = new AWS.DynamoDB.DocumentClient({ service: dynamodb });
+        var k=""+p;
         
     params = {
         TableName: 'webtest',
         Item: {
-            cis311: p,
+            cis311: k,
             timeanddate:d,
             Name: name,
-            Email:useremail,
-                    
+            Email:useremail        
         }
     };
     docClient.put(params, function(err, data){
-        if (err) console.log(err);
+        if  (err){           console.log(err);
+           }
         else
         {
-            console.log(JSON.stringify(data));
+
+            console.log("Hello "+name+"  "+ useremail+" your session ID is  "+k);
 
         }
     })
